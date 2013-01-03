@@ -29,12 +29,38 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 
+import org.elasticsearch.env.Environment;
+
 /**
  * IK分词器，Lucene Analyzer接口实现
  * 兼容Lucene 4.0版本
  */
 public final class IKAnalyzer extends Analyzer{
 	
+	private static IKAnalyzer singleton;
+
+	public static IKAnalyzer getInstance(){
+		if(singleton == null){
+			synchronized(IKAnalyzer.class){
+				if(singleton == null){
+					singleton = new IKAnalyzer(false);
+					return singleton;
+				}
+			}
+		}
+		return singleton;
+	}
+
+	private Environment env;
+
+	public Environment environment() {
+		return this.env;
+	}
+
+	public void setEnvironment(Environment env) {
+		this.env = env;
+	}
+
 	private boolean useSmart;
 	
 	public boolean useSmart() {

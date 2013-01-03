@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.wltea.analyzer.cfg.Configuration;
+import org.wltea.analyzer.lucene.IKAnalyzer;
 
 import org.elasticsearch.env.Environment;
 import java.io.FileInputStream;
@@ -204,10 +205,11 @@ public class Dictionary {
 		//读取主词典文件
         //InputStream is = this.getClass().getClassLoader().getResourceAsStream(cfg.getMainDictionary());
         InputStream is = null;
+		Environment env = IKAnalyzer.getInstance().environment();
         try {
-        	is = new FileInputStream(new File((new Environment()).configFile(), cfg.getMainDictionary()));
+        	is = new FileInputStream(new File(env.configFile(), cfg.getMainDictionary()));
         } catch(java.io.FileNotFoundException ioe){
-        	File f = new File((new Environment()).configFile(), cfg.getMainDictionary());
+        	File f = new File(env.configFile(), cfg.getMainDictionary());
         	throw new RuntimeException("Main Dictionary not found at: " + f);
         }
 
@@ -256,10 +258,11 @@ public class Dictionary {
 				//读取扩展词典文件
 				//System.out.println("加载扩展词典：" + extDictName);
 				//is = this.getClass().getClassLoader().getResourceAsStream(extDictName);
+				Environment env = IKAnalyzer.getInstance().environment();
 				try {
-			        is = new FileInputStream(new File((new Environment()).configFile(), extDictName));
+			        is = new FileInputStream(new File(env.configFile(), extDictName));
 		        } catch(java.io.FileNotFoundException ioe){
-		        	File f = new File((new Environment()).configFile(), extDictName);
+		        	File f = new File(env.configFile(), extDictName);
 		        	throw new RuntimeException("Ext Dictionary not found at: " + f);
 		        }
 
@@ -312,10 +315,11 @@ public class Dictionary {
 
 				//读取扩展词典文件
 				//is = this.getClass().getClassLoader().getResourceAsStream(extStopWordDictName);
+				Environment env = IKAnalyzer.getInstance().environment();
 				try {
-		        	is = new FileInputStream(new File((new Environment()).configFile(), extStopWordDictName));
+		        	is = new FileInputStream(new File(env.configFile(), extStopWordDictName));
 		        } catch(java.io.FileNotFoundException ioe){
-		        	File f = new File((new Environment()).configFile(), extStopWordDictName);
+		        	File f = new File(env.configFile(), extStopWordDictName);
 		        	throw new RuntimeException("Stop Word Dictionary not found at: " + f);
 		        }
 		        
@@ -362,10 +366,11 @@ public class Dictionary {
 		//读取量词词典文件
         //InputStream is = this.getClass().getClassLoader().getResourceAsStream(cfg.getQuantifierDicionary());
         InputStream is = null;
+        Environment env = IKAnalyzer.getInstance().environment();
         try {
-        	is = new FileInputStream(new File((new Environment()).configFile(), cfg.getQuantifierDicionary()));
+        	is = new FileInputStream(new File(env.configFile(), cfg.getQuantifierDicionary()));
         } catch(java.io.FileNotFoundException ioe){
-        	File f = new File((new Environment()).configFile(), cfg.getQuantifierDicionary());
+        	File f = new File(env.configFile(), cfg.getQuantifierDicionary());
         	throw new RuntimeException("Quantifier Dictionary not found at: " + f);
         }
         if(is == null){

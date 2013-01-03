@@ -32,6 +32,8 @@ import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Properties;
 
+import org.wltea.analyzer.lucene.IKAnalyzer;
+
 import org.elasticsearch.env.Environment;
 import java.io.FileInputStream;
 import java.io.File;
@@ -82,10 +84,11 @@ public class DefaultConfig implements Configuration{
 
 		//InputStream input = this.getClass().getClassLoader().getResourceAsStream(FILE_NAME);
 		InputStream input = null;
+		Environment env = IKAnalyzer.getInstance().environment();
 		try {
-			input = new FileInputStream(new File((new Environment()).configFile(), FILE_NAME));
+			input = new FileInputStream(new File(env.configFile(), FILE_NAME));
         } catch(java.io.FileNotFoundException ioe){
-        	throw new RuntimeException("fail to access config file: " + (new Environment()).configFile());
+        	throw new RuntimeException("fail to access config file: " + (new File(env.configFile(), FILE_NAME)));
         }
 		if(input != null){
 			try {

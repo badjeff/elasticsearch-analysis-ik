@@ -26,6 +26,7 @@ public class IkAnalyzerProvider extends AbstractIndexAnalyzerProvider<IKAnalyzer
 //        logger.info("[Env Setting] {}",env.configFile());
 
         //analyzer=new IKAnalyzer(indexSettings);
+        IKAnalyzer.getInstance().setEnvironment(env);
         analyzer=new IKAnalyzer(false);
     }
 
@@ -40,17 +41,19 @@ public class IkAnalyzerProvider extends AbstractIndexAnalyzerProvider<IKAnalyzer
     }*/
 
 
-    public IkAnalyzerProvider(Index index, Settings indexSettings, String name,
-    		Settings settings) {
+    public IkAnalyzerProvider(Index index, Settings indexSettings, String name, Settings settings) {
 		super(index, indexSettings, name, settings);
 		//analyzer=new IKAnalyzer(indexSettings);
+        Environment env = new Environment(settings);
+        IKAnalyzer.getInstance().setEnvironment(env);
         analyzer=new IKAnalyzer(false);
 	}
 
-	public IkAnalyzerProvider(Index index, Settings indexSettings,
-			String prefixSettings, String name, Settings settings) {
+	public IkAnalyzerProvider(Index index, Settings indexSettings, String prefixSettings, String name, Settings settings) {
 		super(index, indexSettings, prefixSettings, name, settings);
 		//analyzer=new IKAnalyzer(indexSettings);
+        Environment env = new Environment(settings);
+        IKAnalyzer.getInstance().setEnvironment(env);
         analyzer=new IKAnalyzer(false);
 	}
 
