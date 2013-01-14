@@ -14,7 +14,7 @@ import org.elasticsearch.common.logging.Loggers;
 
 public class IkAnalyzerProvider extends AbstractIndexAnalyzerProvider<IKAnalyzer> {
     private final IKAnalyzer analyzer;
-    private ESLogger logger=null;
+    // private ESLogger logger=null;
     @Inject
     public IkAnalyzerProvider(Index index, @IndexSettings Settings indexSettings, Environment env, @Assisted String name, @Assisted Settings settings) {
         super(index, indexSettings, name, settings);

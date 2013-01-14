@@ -41,6 +41,9 @@ import java.io.File;
 import java.util.Collection;
 import java.util.List;
 
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.Loggers;
+
 /**
  * 词典管理类,单子模式
  */
@@ -56,7 +59,8 @@ public class Dictionary {
 	 * 主词典对象
 	 */
 	private DictSegment _MainDict;
-	
+	private long _MainDict_lastModified;
+
 	/*
 	 * 停止词词典 
 	 */
@@ -65,19 +69,26 @@ public class Dictionary {
 	 * 量词词典
 	 */
 	private DictSegment _QuantifierDict;
-	
+
 	/**
 	 * 配置对象
 	 */
 	private Configuration cfg;
 	
 	private Dictionary(Configuration cfg){
+		_MainDict_lastModified = -1;
 		this.cfg = cfg;
-		this.loadMainDict();
-		this.loadStopWordDict();
-		this.loadQuantifierDict();
+		this.loadMainDict(false);
+		this.loadStopWordDict(false);
+		this.loadQuantifierDict(false);
 	}
-	
+
+	private void reloadDictsIfNeeded(){
+		this.loadMainDict(true);
+		// this.loadStopWordDict(true);
+		// this.loadQuantifierDict(true);
+	}
+
 	/**
 	 * 词典初始化
 	 * 由于IK Analyzer的词典采用Dictionary类的静态方法进行词典初始化
@@ -97,7 +108,7 @@ public class Dictionary {
 		}
 		return singleton;
 	}
-	
+
 	/**
 	 * 获取词典单子实例
 	 * @return Dictionary 单例对象
@@ -105,6 +116,11 @@ public class Dictionary {
 	public static Dictionary getSingleton(){
 		if(singleton == null){
 			throw new IllegalStateException("词典尚未初始化，请先调用initial方法");
+		}
+		else{
+			synchronized(singleton){
+				singleton.reloadDictsIfNeeded();
+			}
 		}
 		return singleton;
 	}
@@ -198,7 +214,16 @@ public class Dictionary {
 	/**
 	 * 加载主词典及扩展词典
 	 */
-	private void loadMainDict(){
+	private void loadMainDict(boolean checkUpdates){
+		if (checkUpdates){
+			Environment env = IKAnalyzer.getInstance().environment();
+	    	File f = new File(env.configFile(), cfg.getMainDictionary());
+	    	if (_MainDict_lastModified > 0 && _MainDict_lastModified == f.lastModified()){
+				this.loadExtDict(checkUpdates);
+				return;
+	    	}
+		}
+
 		//建立一个主词典实例
 		_MainDict = new DictSegment((char)0);
 
@@ -206,10 +231,11 @@ public class Dictionary {
         //InputStream is = this.getClass().getClassLoader().getResourceAsStream(cfg.getMainDictionary());
         InputStream is = null;
 		Environment env = IKAnalyzer.getInstance().environment();
+    	File f = new File(env.configFile(), cfg.getMainDictionary());
         try {
-        	is = new FileInputStream(new File(env.configFile(), cfg.getMainDictionary()));
+        	_MainDict_lastModified = f.lastModified();
+        	is = new FileInputStream(f);
         } catch(java.io.FileNotFoundException ioe){
-        	File f = new File(env.configFile(), cfg.getMainDictionary());
         	throw new RuntimeException("Main Dictionary not found at: " + f);
         }
 
@@ -227,6 +253,9 @@ public class Dictionary {
 				}
 			} while (theWord != null);
 			
+			ESLogger logger = Loggers.getLogger("ik-analyzer");
+			logger.info("[Dictionary] {}", "Loaded Main Dictionary on " + _MainDict_lastModified);
+
 		} catch (IOException ioe) {
 			System.err.println("Main Dictionary loading exception.");
 			ioe.printStackTrace();
@@ -242,27 +271,27 @@ public class Dictionary {
 			}
 		}
 		//加载扩展词典
-		this.loadExtDict();
+		this.loadExtDict(checkUpdates);
 	}	
 	
 	/**
 	 * 加载用户配置的扩展词典到主词库表
 	 */
-	private void loadExtDict(){
+	private void loadExtDict(boolean checkUpdates){
 		//加载扩展词典配置
 		List<String> extDictFiles  = cfg.getExtDictionarys();
 		if(extDictFiles != null){
 			InputStream is = null;
 			for(String extDictName : extDictFiles){
-
 				//读取扩展词典文件
 				//System.out.println("加载扩展词典：" + extDictName);
 				//is = this.getClass().getClassLoader().getResourceAsStream(extDictName);
 				Environment env = IKAnalyzer.getInstance().environment();
+	        	File f = new File(env.configFile(), extDictName);
 				try {
-			        is = new FileInputStream(new File(env.configFile(), extDictName));
+					// _ExtDict_lastModified = f.lastModified();
+			        is = new FileInputStream(f);
 		        } catch(java.io.FileNotFoundException ioe){
-		        	File f = new File(env.configFile(), extDictName);
 		        	throw new RuntimeException("Ext Dictionary not found at: " + f);
 		        }
 
@@ -281,7 +310,7 @@ public class Dictionary {
 							_MainDict.fillSegment(theWord.trim().toLowerCase().toCharArray());
 						}
 					} while (theWord != null);
-					
+
 				} catch (IOException ioe) {
 					System.err.println("Extension Dictionary loading exception.");
 					ioe.printStackTrace();
@@ -303,7 +332,7 @@ public class Dictionary {
 	/**
 	 * 加载用户扩展的停止词词典
 	 */
-	private void loadStopWordDict(){
+	private void loadStopWordDict(boolean checkUpdates){
 		//建立一个主词典实例
 		_StopWordDict = new DictSegment((char)0);
 		//加载扩展停止词典
@@ -312,14 +341,14 @@ public class Dictionary {
 			InputStream is = null;
 			for(String extStopWordDictName : extStopWordDictFiles){
 				//System.out.println("加载扩展停止词典：" + extStopWordDictName);
-
 				//读取扩展词典文件
 				//is = this.getClass().getClassLoader().getResourceAsStream(extStopWordDictName);
 				Environment env = IKAnalyzer.getInstance().environment();
+	        	File f = new File(env.configFile(), extStopWordDictName);
 				try {
-		        	is = new FileInputStream(new File(env.configFile(), extStopWordDictName));
+					// _StopWordDict_lastModified = f.lastModified();
+		        	is = new FileInputStream(f);
 		        } catch(java.io.FileNotFoundException ioe){
-		        	File f = new File(env.configFile(), extStopWordDictName);
 		        	throw new RuntimeException("Stop Word Dictionary not found at: " + f);
 		        }
 		        
@@ -360,17 +389,18 @@ public class Dictionary {
 	/**
 	 * 加载量词词典
 	 */
-	private void loadQuantifierDict(){
+	private void loadQuantifierDict(boolean checkUpdates){
 		//建立一个量词典实例
 		_QuantifierDict = new DictSegment((char)0);
 		//读取量词词典文件
         //InputStream is = this.getClass().getClassLoader().getResourceAsStream(cfg.getQuantifierDicionary());
         InputStream is = null;
         Environment env = IKAnalyzer.getInstance().environment();
+    	File f = new File(env.configFile(), cfg.getQuantifierDicionary());
         try {
-        	is = new FileInputStream(new File(env.configFile(), cfg.getQuantifierDicionary()));
+        	// _QuantifierDict_lastModified = f.lastModified();
+        	is = new FileInputStream(f);
         } catch(java.io.FileNotFoundException ioe){
-        	File f = new File(env.configFile(), cfg.getQuantifierDicionary());
         	throw new RuntimeException("Quantifier Dictionary not found at: " + f);
         }
         if(is == null){
@@ -385,7 +415,7 @@ public class Dictionary {
 					_QuantifierDict.fillSegment(theWord.trim().toLowerCase().toCharArray());
 				}
 			} while (theWord != null);
-			
+
 		} catch (IOException ioe) {
 			System.err.println("Quantifier Dictionary loading exception.");
 			ioe.printStackTrace();
